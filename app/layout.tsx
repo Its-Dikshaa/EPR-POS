@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { AppProvider } from "@/lib/store/app-context";
+import { QueryProvider } from "@/components/providers/query-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body style={{ margin: 0, padding: 0 }}>
-        <AppProvider>{children}</AppProvider>
+        <QueryProvider>
+          <AppProvider>{children}</AppProvider>
+        </QueryProvider>
       </body>
     </html>
   );

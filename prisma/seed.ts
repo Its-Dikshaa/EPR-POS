@@ -43,7 +43,23 @@ async function main() {
     });
   }
 
-  // 4. Create Initial Products
+  // 4. Create GST Tax Slabs
+  const gstSlabs = [
+    { hsnCode: "1006", description: "Rice and Cereals", gstRate: 5 },
+    { hsnCode: "0713", description: "Pulses and Legumes", gstRate: 5 },
+    { hsnCode: "1512", description: "Edible Oils", gstRate: 5 },
+    { hsnCode: "1904", description: "Prepared Food Items", gstRate: 12 },
+    { hsnCode: "3401", description: "Soaps & Detergents", gstRate: 18 },
+  ];
+  for (const slab of gstSlabs) {
+    await prisma.gstTaxSlab.upsert({
+      where: { hsnCode: slab.hsnCode },
+      update: {},
+      create: slab,
+    });
+  }
+
+  // 5. Create Initial Products
   const sampleProducts = [
     { name: "Basmati Rice 5kg", sku: "RICE001", categoryName: "Grains", brandName: "India Gate", mrp: 450, salePrice: 420, purchasePrice: 320, gstRate: 5, hsnCode: "1006", unit: "Bag", barcode: "8901234567890", rackPosition: "A1" },
     { name: "Toor Dal 1kg", sku: "DAL001", categoryName: "Pulses", brandName: "Tata", mrp: 160, salePrice: 148, purchasePrice: 110, gstRate: 5, hsnCode: "0713", unit: "Kg", barcode: "8901234567891", rackPosition: "A2" },

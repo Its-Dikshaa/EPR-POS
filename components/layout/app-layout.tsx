@@ -11,9 +11,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#f0f4f8", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      <Sidebar />
+      <div className="no-print" style={{ flexShrink: 0 }}>
+        <Sidebar />
+      </div>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <Header />
+        <div className="no-print">
+          <Header />
+        </div>
         <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>{children}</main>
       </div>
       <Toast msg={toast?.msg || null} type={toast?.type || "success"} onClose={clearToast} />

@@ -25,3 +25,5 @@ npm-debug.log*
 *.sw?
 dist/
 dist-ssr/
+.vercel
+.env*

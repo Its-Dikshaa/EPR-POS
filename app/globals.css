@@ -18,3 +18,105 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* =========================================================
+   THERMAL RECEIPT & BARCODE PRINTER STYLES
+   ========================================================= */
+
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide navigation, header, action buttons during printing */
+  .no-print,
+  nav,
+  aside,
+  header,
+  button,
+  .toast,
+  .modal-overlay:not(.print-active-modal) {
+    display: none !important;
+  }
+
+  /* Make sure printable content occupies full page */
+  .printable-area {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 2mm !important;
+    background: #fff !important;
+  }
+
+  /* 80mm standard thermal receipt format */
+  .thermal-receipt-80mm {
+    width: 76mm !important;
+    max-width: 76mm !important;
+    margin: 0 auto !important;
+    padding: 2mm !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* 58mm compact thermal receipt format */
+  .thermal-receipt-58mm {
+    width: 54mm !important;
+    max-width: 54mm !important;
+    margin: 0 auto !important;
+    padding: 1mm !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 10px !important;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  /* Barcode sticker roll printable grid */
+  .barcode-sticker-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 2mm !important;
+    padding: 1mm !important;
+    margin: 0 !important;
+  }
+
+  .barcode-sticker-50x25 {
+    width: 50mm !important;
+    height: 25mm !important;
+    max-width: 50mm !important;
+    max-height: 25mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 1.5mm !important;
+    box-sizing: border-box !important;
+  }
+
+  .barcode-sticker-38x25 {
+    width: 38mm !important;
+    height: 25mm !important;
+    max-width: 38mm !important;
+    max-height: 25mm !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 1mm !important;
+    box-sizing: border-box !important;
+  }
+}

@@ -163,7 +163,20 @@ export function Header() {
 
         <div style={{ width: 1, height: 24, background: "#e2e8f0" }} />
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Link
+          href="/profile"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            textDecoration: "none",
+            cursor: "pointer",
+            padding: "4px 8px",
+            borderRadius: 8,
+            transition: "background 0.15s ease",
+          }}
+          title="Open Admin Profile"
+        >
           <div
             style={{
               width: 34,
@@ -186,7 +199,7 @@ export function Header() {
             </div>
             <div style={{ fontSize: 11, color: "#0ea5e9", fontWeight: 600 }}>{currentUser?.role || "Admin"}</div>
           </div>
-        </div>
+        </Link>
       </div>
     </header>
   );

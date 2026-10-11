@@ -33,11 +33,30 @@ export function PosCounter() {
     return matchCat && matchSearch;
   });
 
+  const playBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 950;
+      gain.gain.value = 0.08;
+      osc.start();
+      osc.stop(ctx.currentTime + 0.06);
+    } catch {
+      // Audio context blocked
+    }
+  };
+
   const addToCart = (product: ProductItem) => {
     if (product.stock <= 0) {
       showToast(`${product.name} is Out of Stock!`, "error");
       return;
     }
+    playBeep();
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -144,6 +163,18 @@ export function PosCounter() {
       bills: [newBill, ...prev.bills],
     }));
 
+    // UPI Soundbox Voice Notification Simulation
+    if (payment === "UPI" && typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        const voiceText = `Payment of ${Math.round(total)} rupees received on UPI`;
+        const utter = new SpeechSynthesisUtterance(voiceText);
+        utter.lang = "en-IN";
+        window.speechSynthesis.speak(utter);
+      } catch {
+        // Speech blocked
+      }
+    }
+
     setShowInvoice(newBill);
     clearCart();
     showToast(`Bill ${billNo} completed & stock updated! ✅`);
@@ -234,6 +265,21 @@ export function PosCounter() {
                   </div>
                   <h4 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#1e293b" }}>{p.name}</h4>
                   <div style={{ fontSize: 11, color: "#64748b" }}>SKU: {p.sku} | HSN: {p.hsn}</div>
+                  <div style={{ marginTop: 4 }}>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        background: "#eff6ff",
+                        color: "#1d4ed8",
+                        padding: "1px 6px",
+                        borderRadius: 4,
+                        fontWeight: 700,
+                        border: "1px solid #bfdbfe",
+                      }}
+                    >
+                      📍 Rack {p.rack || "A1"}
+                    </span>
+                  </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
                   <div>

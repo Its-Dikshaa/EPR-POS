@@ -8,6 +8,8 @@ const navItems = [
   { id: "dashboard", href: "/dashboard", icon: "📊", label: "Dashboard" },
   { id: "pos", href: "/pos", icon: "🛒", label: "POS Billing" },
   { id: "products", href: "/products", icon: "📦", label: "Products" },
+  { id: "locations", href: "/locations", icon: "📍", label: "Racks & Aisles" },
+  { id: "expiry", href: "/expiry", icon: "⏳", label: "Expiry Management" },
   { id: "inventory", href: "/inventory", icon: "🏪", label: "Inventory" },
   { id: "purchases", href: "/purchases", icon: "🛍️", label: "Purchases" },
   { id: "customers", href: "/customers", icon: "👥", label: "Customers" },
@@ -20,6 +22,7 @@ const navItems = [
   { id: "branches", href: "/branches", icon: "🏢", label: "Branches" },
   { id: "franchises", href: "/franchises", icon: "🏪", label: "Franchises" },
   { id: "users", href: "/users", icon: "🔐", label: "Users & Roles" },
+  { id: "profile", href: "/profile", icon: "👤", label: "Admin Profile" },
   { id: "settings", href: "/settings", icon: "⚙️", label: "Settings" },
 ];
 

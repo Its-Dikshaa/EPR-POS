@@ -17,7 +17,10 @@ import {
   CheckCircle2,
   TrendingDown,
   Clock,
+  Printer,
 } from "lucide-react";
+import Link from "next/link";
+import { ProductItem } from "@/types";
 
 interface BatchItem {
   id: string;
@@ -33,99 +36,54 @@ interface BatchItem {
   salePrice: number;
   status: "expired" | "urgent" | "upcoming" | "safe";
   daysLeft: number;
+  isClearance?: boolean;
 }
 
 export function ExpiryView() {
-  const { data, showToast } = useAppStore();
+  const { data, setData, showToast } = useAppStore();
   const [filter, setFilter] = useState<"all" | "expired" | "urgent" | "upcoming">("all");
   const [search, setSearch] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Sample batch data with varied expiry timelines
-  const [batches, setBatches] = useState<BatchItem[]>([
-    {
-      id: "b-1",
-      productId: 5,
-      productName: "Amul Butter 500g",
-      category: "Dairy",
-      batchNo: "AM-26-081",
-      mfgDate: "2026-08-01",
-      expiryDate: "2026-10-05", // Expired
-      stock: 12,
-      unit: "Pack",
-      purchasePrice: 195,
-      salePrice: 238,
-      status: "expired",
-      daysLeft: -6,
-    },
-    {
-      id: "b-2",
-      productId: 6,
-      productName: "Maggi Noodles 70g",
-      category: "Instant Food",
-      batchNo: "MAG-26-09A",
-      mfgDate: "2026-04-10",
-      expiryDate: "2026-10-18", // 7 days left
-      stock: 45,
-      unit: "Pack",
-      purchasePrice: 10,
-      salePrice: 14,
-      status: "urgent",
-      daysLeft: 7,
-    },
-    {
-      id: "b-3",
-      productId: 2,
-      productName: "Toor Dal 1kg",
-      category: "Pulses",
-      batchNo: "TD-26-03",
-      mfgDate: "2026-02-15",
-      expiryDate: "2026-10-25", // 14 days left
-      stock: 20,
-      unit: "Kg",
-      purchasePrice: 110,
-      salePrice: 148,
-      status: "urgent",
-      daysLeft: 14,
-    },
-    {
-      id: "b-4",
-      productId: 4,
-      productName: "Aashirvaad Atta 5kg",
-      category: "Flour",
-      batchNo: "ATT-26-05",
-      mfgDate: "2026-07-01",
-      expiryDate: "2026-11-02", // 22 days left
-      stock: 8,
-      unit: "Bag",
-      purchasePrice: 200,
-      salePrice: 265,
-      status: "upcoming",
-      daysLeft: 22,
-    },
-    {
-      id: "b-5",
-      productId: 1,
-      productName: "Basmati Rice 5kg",
-      category: "Grains",
-      batchNo: "RICE-26-11",
-      mfgDate: "2026-01-10",
-      expiryDate: "2027-01-10", // Safe
-      stock: 140,
-      unit: "Bag",
-      purchasePrice: 320,
-      salePrice: 420,
-      status: "safe",
-      daysLeft: 91,
-    },
-  ]);
+  // Modal State for Adding New Batch
+  const [selectedProductId, setSelectedProductId] = useState<string>(data.products[0]?.id?.toString() || "");
+  const [customProductName, setCustomProductName] = useState("");
+  const [batchNoInput, setBatchNoInput] = useState(`BAT-26-${Date.now().toString().slice(-4)}`);
+  const [mfgDateInput, setMfgDateInput] = useState("2026-08-01");
+  const [expiryDateInput, setExpiryDateInput] = useState("2026-10-25");
+  const [stockInput, setStockInput] = useState("15");
 
-  // Modal State
-  const [selectedProduct, setSelectedProduct] = useState(data.products[0]?.name || "");
-  const [batchNoInput, setBatchNoInput] = useState("");
-  const [mfgDateInput, setMfgDateInput] = useState("");
-  const [expiryDateInput, setExpiryDateInput] = useState("");
-  const [stockInput, setStockInput] = useState("10");
+  // Derive all active batches directly from data.products
+  const batches: BatchItem[] = data.products
+    .filter((p) => p.expiryDate || p.batchNo)
+    .map((p) => {
+      const today = new Date("2026-10-11");
+      const exp = p.expiryDate ? new Date(p.expiryDate) : new Date("2027-01-01");
+      const diffTime = exp.getTime() - today.getTime();
+      const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      let status: "expired" | "urgent" | "upcoming" | "safe" = "safe";
+      if (daysLeft <= 0) status = "expired";
+      else if (daysLeft <= 15) status = "urgent";
+      else if (daysLeft <= 30) status = "upcoming";
+
+      return {
+        id: `batch-${p.id}`,
+        productId: p.id,
+        productName: p.name,
+        category: p.category,
+        batchNo: p.batchNo || `BAT-26-${p.id}`,
+        mfgDate: p.mfgDate || "2026-06-01",
+        expiryDate: p.expiryDate || "2026-12-31",
+        stock: p.stock,
+        unit: p.unit || "Pack",
+        purchasePrice: p.purchasePrice,
+        salePrice: p.salePrice,
+        status,
+        daysLeft,
+        isClearance: p.isClearance,
+      };
+    });
 
   const expiredCount = batches.filter((b) => b.status === "expired").length;
   const urgentCount = batches.filter((b) => b.status === "urgent").length;
@@ -143,65 +101,119 @@ export function ExpiryView() {
     return matchFilter && matchSearch;
   });
 
-  const handleApplyDiscount = (id: string, pct = 30) => {
-    setBatches((prev) =>
-      prev.map((b) =>
-        b.id === id
-          ? { ...b, salePrice: Math.round(b.salePrice * (1 - pct / 100)) }
-          : b
-      )
-    );
-    showToast(`Applied ${pct}% clearance discount! Updated price on POS shelf. 🏷️`);
+  // Action 1: Apply 30% Clearance Discount directly to product in POS
+  const handleApplyDiscount = (batch: BatchItem, pct = 30) => {
+    const discountedPrice = Math.round(batch.salePrice * (1 - pct / 100));
+
+    setData((prev: any) => ({
+      ...prev,
+      products: prev.products.map((p: ProductItem) =>
+        p.id === batch.productId
+          ? {
+              ...p,
+              originalPrice: p.originalPrice || p.salePrice,
+              salePrice: discountedPrice,
+              isClearance: true,
+            }
+          : p
+      ),
+    }));
+
+    showToast(`Applied ${pct}% clearance discount on ${batch.productName}! Price in POS is now ₹${discountedPrice}. 🏷️`);
   };
 
+  // Action 2: Return stock to supplier & adjust supplier balance
   const handleReturnSupplier = (b: BatchItem) => {
-    setBatches((prev) => prev.filter((item) => item.id !== b.id));
-    showToast(`Return to Supplier order initiated for ${b.stock} units of ${b.productName}! 📦`);
+    setData((prev: any) => ({
+      ...prev,
+      products: prev.products.map((p: ProductItem) =>
+        p.id === b.productId ? { ...p, stock: 0 } : p
+      ),
+    }));
+    showToast(`Return to Supplier order initiated for ${b.stock} units of ${b.productName}! Stock removed. 📦`);
   };
 
+  // Action 3: Write off expired loss & record expense
   const handleWriteOff = (b: BatchItem) => {
-    setBatches((prev) => prev.filter((item) => item.id !== b.id));
-    showToast(`Written off ${b.stock} units of ${b.productName} as expired inventory loss. 🗑️`, "error");
+    const lossAmount = b.purchasePrice * b.stock;
+
+    setData((prev: any) => ({
+      ...prev,
+      products: prev.products.map((p: ProductItem) =>
+        p.id === b.productId ? { ...p, stock: 0 } : p
+      ),
+      expenses: [
+        {
+          id: Date.now(),
+          date: "2026-10-11",
+          category: "Damaged / Expired Stock Loss",
+          amount: lossAmount,
+          description: `Expiry write-off: ${b.stock} ${b.unit} of ${b.productName} (Batch: ${b.batchNo})`,
+          status: "Approved",
+          paidBy: "Inventory Write-Off",
+        },
+        ...prev.expenses,
+      ],
+    }));
+
+    showToast(`Written off ${b.stock} units of ${b.productName} (₹${lossAmount.toLocaleString("en-IN")} loss recorded in expenses). 🗑️`, "error");
   };
 
+  // Action 4: Add New Batch / Register Expiry
   const handleAddBatch = () => {
     if (!batchNoInput || !expiryDateInput) {
       showToast("Please enter batch number and expiry date", "error");
       return;
     }
-    const today = new Date();
-    const exp = new Date(expiryDateInput);
-    const diffTime = exp.getTime() - today.getTime();
-    const daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    let status: "expired" | "urgent" | "upcoming" | "safe" = "safe";
-    if (daysLeft < 0) status = "expired";
-    else if (daysLeft <= 15) status = "urgent";
-    else if (daysLeft <= 30) status = "upcoming";
+    const matchedProd = data.products.find((p) => p.id.toString() === selectedProductId);
 
-    const matchedProd = data.products.find((p) => p.name === selectedProduct);
+    if (matchedProd) {
+      // Update existing product with fresh batch & expiry
+      setData((prev: any) => ({
+        ...prev,
+        products: prev.products.map((p: ProductItem) =>
+          p.id === matchedProd.id
+            ? {
+                ...p,
+                batchNo: batchNoInput,
+                mfgDate: mfgDateInput,
+                expiryDate: expiryDateInput,
+                stock: p.stock + (parseInt(stockInput) || 0),
+              }
+            : p
+        ),
+      }));
+      showToast(`Updated ${matchedProd.name} with Batch ${batchNoInput} and Expiry ${expiryDateInput}! (+${stockInput} stock added) ✅`);
+    } else if (customProductName) {
+      // Create new product
+      const newProd: ProductItem = {
+        id: Date.now(),
+        name: customProductName,
+        sku: `SKU-${Date.now().toString().slice(-4)}`,
+        category: "General",
+        brand: "KC Store",
+        mrp: 120,
+        salePrice: 100,
+        purchasePrice: 75,
+        stock: parseInt(stockInput) || 10,
+        minStock: 10,
+        gst: 5,
+        hsn: "2106",
+        unit: "Pack",
+        barcode: `890${Date.now().toString().slice(-10)}`,
+        rack: "A1",
+        status: "Active",
+        batchNo: batchNoInput,
+        mfgDate: mfgDateInput,
+        expiryDate: expiryDateInput,
+      };
+      setData((prev: any) => ({ ...prev, products: [newProd, ...prev.products] }));
+      showToast(`Created new product ${customProductName} with Expiry ${expiryDateInput}! ✅`);
+    }
 
-    const newBatch: BatchItem = {
-      id: `b-${Date.now()}`,
-      productId: matchedProd?.id || 1,
-      productName: selectedProduct,
-      category: matchedProd?.category || "General",
-      batchNo: batchNoInput,
-      mfgDate: mfgDateInput || new Date().toISOString().split("T")[0],
-      expiryDate: expiryDateInput,
-      stock: parseInt(stockInput) || 10,
-      unit: matchedProd?.unit || "Unit",
-      purchasePrice: matchedProd?.purchasePrice || 100,
-      salePrice: matchedProd?.salePrice || 120,
-      status,
-      daysLeft,
-    };
-
-    setBatches((prev) => [newBatch, ...prev]);
-    showToast(`Added batch ${batchNoInput} for ${selectedProduct}! ✅`);
     setShowAddModal(false);
-    setBatchNoInput("");
-    setExpiryDateInput("");
+    setBatchNoInput(`BAT-26-${Date.now().toString().slice(-4)}`);
   };
 
   return (
@@ -228,12 +240,19 @@ export function ExpiryView() {
             </h2>
           </div>
           <p style={{ margin: "4px 0 0", fontSize: 13, color: "#94a3b8" }}>
-            Track near-expiry packaged goods, prevent grocery waste, and trigger automated clearance sales.
+            Track near-expiry packaged goods, prevent grocery waste, sync with POS billing, and trigger 30% clearance sales.
           </p>
         </div>
-        <Btn onClick={() => setShowAddModal(true)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Plus size={16} /> Add Batch & Expiry
-        </Btn>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/products">
+            <Btn variant="outline" style={{ color: "#fff", borderColor: "rgba(255,255,255,0.4)" }}>
+              📦 View Products Master
+            </Btn>
+          </Link>
+          <Btn onClick={() => setShowAddModal(true)} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Plus size={16} /> Add Batch & Expiry
+          </Btn>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -254,7 +273,7 @@ export function ExpiryView() {
             <AlertTriangle size={18} />
           </div>
           <div style={{ fontSize: 24, fontWeight: 800, color: "#991b1b" }}>{expiredCount} Batches</div>
-          <div style={{ fontSize: 11, color: "#b91c1c", marginTop: 4 }}>Loss Risk: ₹{expiredLoss.toLocaleString()}</div>
+          <div style={{ fontSize: 11, color: "#b91c1c", marginTop: 4 }}>Loss Risk: ₹{expiredLoss.toLocaleString("en-IN")}</div>
         </div>
 
         <div
@@ -447,20 +466,29 @@ export function ExpiryView() {
                       {b.stock} {b.unit}
                     </td>
                     <td style={{ padding: "12px 16px" }}>
-                      <span style={{ fontWeight: 800, color: "#0ea5e9" }}>₹{b.salePrice}</span>
+                      <div>
+                        <span style={{ fontWeight: 800, color: b.isClearance ? "#ea580c" : "#0ea5e9" }}>
+                          ₹{b.salePrice}
+                        </span>
+                        {b.isClearance && (
+                          <div style={{ fontSize: 10, color: "#ea580c", fontWeight: 700 }}>
+                            🏷️ Clearance Price
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: "12px 16px", textAlign: "right" }}>
                       <div style={{ display: "flex", justifyContent: "flex-end", gap: 6 }}>
                         {!isExpired && (
                           <button
-                            onClick={() => handleApplyDiscount(b.id, 30)}
-                            title="Apply 30% Clearance Discount"
+                            onClick={() => handleApplyDiscount(b, 30)}
+                            title="Apply 30% Clearance Discount to POS"
                             style={{
                               padding: "6px 10px",
                               borderRadius: 6,
                               border: "1px solid #f97316",
-                              background: "#fff",
-                              color: "#ea580c",
+                              background: b.isClearance ? "#ea580c" : "#fff",
+                              color: b.isClearance ? "#fff" : "#ea580c",
                               fontWeight: 700,
                               fontSize: 11,
                               cursor: "pointer",
@@ -469,9 +497,28 @@ export function ExpiryView() {
                               gap: 4,
                             }}
                           >
-                            <Tag size={12} /> 30% Off
+                            <Tag size={12} /> {b.isClearance ? "30% Active" : "30% Off"}
                           </button>
                         )}
+                        <Link
+                          href="/barcodes"
+                          title="Print Barcode Label"
+                          style={{
+                            padding: "6px 10px",
+                            borderRadius: 6,
+                            border: "1px solid #bae6fd",
+                            background: "#f0f9ff",
+                            color: "#0284c7",
+                            fontWeight: 600,
+                            fontSize: 11,
+                            textDecoration: "none",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <Printer size={12} /> Label
+                        </Link>
                         <button
                           onClick={() => handleReturnSupplier(b)}
                           title="Return stock to supplier"
@@ -539,8 +586,8 @@ export function ExpiryView() {
               background: "#fff",
               borderRadius: 14,
               padding: 24,
-              width: 440,
-              maxWidth: "90%",
+              width: 480,
+              maxWidth: "92%",
               boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
             }}
           >
@@ -548,79 +595,94 @@ export function ExpiryView() {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <CalendarClock size={20} color="#f59e0b" />
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>
-                  Record New Stock Batch & Expiry
+                  Add / Register Expiry Batch to Inventory
                 </h3>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                style={{ border: "none", background: "none", fontSize: 18, cursor: "pointer", color: "#64748b" }}
+                style={{ background: "none", border: "none", fontSize: 18, cursor: "pointer", color: "#64748b" }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div>
-                <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#64748b", marginBottom: 6 }}>
-                  SELECT PRODUCT
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#475569", display: "block", marginBottom: 4 }}>
+                  Select Existing Catalog Product
                 </label>
                 <select
-                  value={selectedProduct}
-                  onChange={(e) => setSelectedProduct(e.target.value)}
+                  value={selectedProductId}
+                  onChange={(e) => setSelectedProductId(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "9px 12px",
-                    border: "1.5px solid #e2e8f0",
+                    padding: "8px 12px",
+                    border: "1px solid #cbd5e1",
                     borderRadius: 8,
                     fontSize: 13,
                     background: "#fff",
+                    outline: "none",
                   }}
                 >
+                  <option value="">-- Or enter new product below --</option>
                   {data.products.map((p) => (
-                    <option key={p.id} value={p.name}>
-                      {p.name} ({p.sku})
+                    <option key={p.id} value={p.id.toString()}>
+                      {p.name} ({p.sku}) — Current Stock: {p.stock}
                     </option>
                   ))}
                 </select>
               </div>
 
+              {!selectedProductId && (
+                <Input
+                  label="Custom Product Name"
+                  value={customProductName}
+                  onChange={(v) => setCustomProductName(v)}
+                  placeholder="e.g. Greek Yogurt 200g"
+                  required
+                />
+              )}
+
               <Input
-                label="Batch / Lot Number"
+                label="Batch Number"
                 value={batchNoInput}
-                onChange={setBatchNoInput}
-                placeholder="e.g. B-2026-10A"
+                onChange={(v) => setBatchNoInput(v)}
+                placeholder="e.g. BAT-26-081"
+                required
               />
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <Input
-                  label="Mfg Date"
+                  label="Manufacturing Date"
                   type="date"
                   value={mfgDateInput}
-                  onChange={setMfgDateInput}
+                  onChange={(v) => setMfgDateInput(v)}
                 />
                 <Input
-                  label="Expiry Date"
+                  label="Expiry Date *"
                   type="date"
                   value={expiryDateInput}
-                  onChange={setExpiryDateInput}
+                  onChange={(v) => setExpiryDateInput(v)}
                   required
                 />
               </div>
 
               <Input
-                label="Batch Quantity (Units)"
+                label="Units / Stock to Add to Inventory"
                 type="number"
                 value={stockInput}
-                onChange={setStockInput}
-                placeholder="10"
+                onChange={(v) => setStockInput(v)}
+                required
               />
-            </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
-              <Btn variant="outline" onClick={() => setShowAddModal(false)}>
-                Cancel
-              </Btn>
-              <Btn onClick={handleAddBatch}>Save Batch</Btn>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10 }}>
+                <Btn variant="ghost" onClick={() => setShowAddModal(false)}>
+                  Cancel
+                </Btn>
+                <Btn onClick={handleAddBatch}>
+                  Save & Sync with Products
+                </Btn>
+              </div>
             </div>
           </div>
         </div>

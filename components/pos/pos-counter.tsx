@@ -56,6 +56,17 @@ export function PosCounter() {
       showToast(`${product.name} is Out of Stock!`, "error");
       return;
     }
+
+    if (product.expiryDate) {
+      const today = new Date("2026-10-11");
+      const exp = new Date(product.expiryDate);
+      if (exp.getTime() < today.getTime()) {
+        showToast(`⚠️ Warning: ${product.name} has EXPIRED (${product.expiryDate})! Check batch before billing.`, "error");
+      } else if (product.isClearance) {
+        showToast(`🏷️ Clearance price applied on ${product.name} (₹${product.salePrice})!`);
+      }
+    }
+
     playBeep();
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
@@ -265,7 +276,7 @@ export function PosCounter() {
                   </div>
                   <h4 style={{ margin: "0 0 4px", fontSize: 13, fontWeight: 700, color: "#1e293b" }}>{p.name}</h4>
                   <div style={{ fontSize: 11, color: "#64748b" }}>SKU: {p.sku} | HSN: {p.hsn}</div>
-                  <div style={{ marginTop: 4 }}>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                     <span
                       style={{
                         fontSize: 10,
@@ -279,6 +290,34 @@ export function PosCounter() {
                     >
                       📍 Rack {p.rack || "A1"}
                     </span>
+                    {p.expiryDate && (
+                      <span
+                        style={{
+                          fontSize: 9.5,
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: 4,
+                          background:
+                            new Date(p.expiryDate).getTime() < new Date("2026-10-11").getTime()
+                              ? "#fee2e2"
+                              : p.isClearance
+                              ? "#ffedd5"
+                              : "#f0fdf4",
+                          color:
+                            new Date(p.expiryDate).getTime() < new Date("2026-10-11").getTime()
+                              ? "#b91c1c"
+                              : p.isClearance
+                              ? "#c2410c"
+                              : "#166534",
+                        }}
+                      >
+                        {new Date(p.expiryDate).getTime() < new Date("2026-10-11").getTime()
+                          ? "🔴 Expired"
+                          : p.isClearance
+                          ? "🏷️ Clearance (-30%)"
+                          : `Exp: ${p.expiryDate}`}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>

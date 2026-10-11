@@ -3,16 +3,29 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { ProductItem, CustomerItem, SupplierItem, BillItem, ExpenseItem, BranchItem, FranchiseItem, UserItem, PurchaseOrder, DiscountItem } from "@/types";
 
-const initialData = {
+const initialData: {
+  products: ProductItem[];
+  customers: CustomerItem[];
+  suppliers: SupplierItem[];
+  bills: BillItem[];
+  expenses: ExpenseItem[];
+  branches: BranchItem[];
+  franchises: FranchiseItem[];
+  users: UserItem[];
+  purchaseOrders: PurchaseOrder[];
+  discounts: DiscountItem[];
+  categories: string[];
+  brands: string[];
+} = {
   products: [
-    { id: 1, name: "Basmati Rice 5kg", sku: "RICE001", category: "Grains", brand: "India Gate", mrp: 450, salePrice: 420, purchasePrice: 320, stock: 142, gst: 5, hsn: "1006", unit: "Bag", barcode: "8901234567890", rack: "A1", status: "Active" },
-    { id: 2, name: "Toor Dal 1kg", sku: "DAL001", category: "Pulses", brand: "Tata", mrp: 160, salePrice: 148, purchasePrice: 110, stock: 89, gst: 5, hsn: "0713", unit: "Kg", barcode: "8901234567891", rack: "A2", status: "Active" },
-    { id: 3, name: "Sunflower Oil 1L", sku: "OIL001", category: "Oils", brand: "Fortune", mrp: 175, salePrice: 162, purchasePrice: 130, stock: 67, gst: 5, hsn: "1512", unit: "Litre", barcode: "8901234567892", rack: "B1", status: "Active" },
-    { id: 4, name: "Aashirvaad Atta 5kg", sku: "ATT001", category: "Flour", brand: "Aashirvaad", mrp: 280, salePrice: 265, purchasePrice: 200, stock: 5, gst: 0, hsn: "1101", unit: "Bag", barcode: "8901234567893", rack: "A3", status: "Active" },
-    { id: 5, name: "Amul Butter 500g", sku: "BUT001", category: "Dairy", brand: "Amul", mrp: 250, salePrice: 238, purchasePrice: 195, stock: 34, gst: 12, hsn: "0405", unit: "Pack", barcode: "8901234567894", rack: "C1", status: "Active" },
-    { id: 6, name: "Maggi Noodles 70g", sku: "MAG001", category: "Instant Food", brand: "Nestle", mrp: 15, salePrice: 14, purchasePrice: 10, stock: 200, gst: 12, hsn: "1902", unit: "Pack", barcode: "8901234567895", rack: "D1", status: "Active" },
-    { id: 7, name: "Surf Excel 1kg", sku: "SUR001", category: "Detergent", brand: "HUL", mrp: 220, salePrice: 205, purchasePrice: 160, stock: 45, gst: 18, hsn: "3402", unit: "Kg", barcode: "8901234567896", rack: "E1", status: "Active" },
-    { id: 8, name: "Colgate 200g", sku: "COL001", category: "Personal Care", brand: "Colgate", mrp: 95, salePrice: 88, purchasePrice: 65, stock: 78, gst: 18, hsn: "3306", unit: "Tube", barcode: "8901234567897", rack: "E2", status: "Active" },
+    { id: 1, name: "Basmati Rice 5kg", sku: "RICE001", category: "Grains", brand: "India Gate", mrp: 450, salePrice: 420, purchasePrice: 320, stock: 142, gst: 5, hsn: "1006", unit: "Bag", barcode: "8901234567890", rack: "A1", status: "Active", batchNo: "IR-2026-01", mfgDate: "2026-05-10", expiryDate: "2027-05-10", minStock: 20 },
+    { id: 2, name: "Toor Dal 1kg", sku: "DAL001", category: "Pulses", brand: "Tata", mrp: 160, salePrice: 148, purchasePrice: 110, stock: 89, gst: 5, hsn: "0713", unit: "Kg", barcode: "8901234567891", rack: "A2", status: "Active", batchNo: "TD-26-03", mfgDate: "2026-02-15", expiryDate: "2026-10-25", minStock: 15 },
+    { id: 3, name: "Sunflower Oil 1L", sku: "OIL001", category: "Oils", brand: "Fortune", mrp: 175, salePrice: 162, purchasePrice: 130, stock: 67, gst: 5, hsn: "1512", unit: "Litre", barcode: "8901234567892", rack: "B1", status: "Active", batchNo: "SO-2026-09", mfgDate: "2026-03-01", expiryDate: "2026-12-01", minStock: 15 },
+    { id: 4, name: "Aashirvaad Atta 5kg", sku: "ATT001", category: "Flour", brand: "Aashirvaad", mrp: 280, salePrice: 265, purchasePrice: 200, stock: 5, gst: 0, hsn: "1101", unit: "Bag", barcode: "8901234567893", rack: "A3", status: "Active", batchNo: "ATT-26-05", mfgDate: "2026-07-01", expiryDate: "2026-11-02", minStock: 10 },
+    { id: 5, name: "Amul Butter 500g", sku: "BUT001", category: "Dairy", brand: "Amul", mrp: 250, salePrice: 238, purchasePrice: 195, stock: 34, gst: 12, hsn: "0405", unit: "Pack", barcode: "8901234567894", rack: "C1", status: "Active", batchNo: "AM-26-081", mfgDate: "2026-08-01", expiryDate: "2026-10-05", minStock: 10 },
+    { id: 6, name: "Maggi Noodles 70g", sku: "MAG001", category: "Instant Food", brand: "Nestle", mrp: 15, salePrice: 14, purchasePrice: 10, stock: 200, gst: 12, hsn: "1902", unit: "Pack", barcode: "8901234567895", rack: "D1", status: "Active", batchNo: "MAG-26-09A", mfgDate: "2026-04-10", expiryDate: "2026-10-18", minStock: 25 },
+    { id: 7, name: "Surf Excel 1kg", sku: "SUR001", category: "Detergent", brand: "HUL", mrp: 220, salePrice: 205, purchasePrice: 160, stock: 45, gst: 18, hsn: "3402", unit: "Kg", barcode: "8901234567896", rack: "E1", status: "Active", batchNo: "SE-2026-12", mfgDate: "2026-01-10", expiryDate: "2028-01-10", minStock: 15 },
+    { id: 8, name: "Colgate 200g", sku: "COL001", category: "Personal Care", brand: "Colgate", mrp: 95, salePrice: 88, purchasePrice: 65, stock: 78, gst: 18, hsn: "3306", unit: "Tube", barcode: "8901234567897", rack: "E2", status: "Active", batchNo: "CG-2026-04", mfgDate: "2026-02-20", expiryDate: "2027-02-20", minStock: 15 },
   ],
   customers: [
     { id: 1, name: "Rajesh Kumar", phone: "9876543210", email: "rajesh@gmail.com", address: "123 Main St, Amritsar", loyaltyPoints: 450, creditLimit: 5000, outstanding: 0, group: "Regular" },

@@ -16,6 +16,12 @@ export interface ProductItem {
   barcode: string;
   rack: string;
   status: string;
+  batchNo?: string;
+  mfgDate?: string;
+  expiryDate?: string;
+  minStock?: number;
+  isClearance?: boolean;
+  originalPrice?: number;
 }
 
 export interface CustomerItem {

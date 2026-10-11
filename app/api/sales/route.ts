@@ -22,17 +22,42 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    const subtotal = Number(body.subtotal ?? body.totalAmount ?? body.total ?? 0);
+    const gstAmount = Number(body.gstAmount ?? body.gst ?? body.taxAmount ?? 0);
+    const discount = Number(body.discount ?? 0);
+    const total = Number(body.total ?? body.totalAmount ?? (subtotal + gstAmount - discount));
+    const billNo = body.billNo || body.invoiceNo || `KC-${Date.now()}`;
+    const customerName = body.customerName || body.customer || "Walk-in";
+    const paymentMethod = (body.paymentMethod || body.payment || "CASH").toUpperCase() as any;
+
     const newSale = await prisma.sale.create({
       data: {
-        billNo: body.billNo || `KC-${Date.now()}`,
-        customerName: body.customer || "Walk-in",
-        subtotal: parseFloat(body.subtotal),
-        gstAmount: parseFloat(body.gst),
-        discount: parseFloat(body.discount || 0),
-        total: parseFloat(body.total),
-        paymentMethod: body.payment?.toUpperCase() || "CASH",
-        cashPaid: body.cashPaid ? parseFloat(body.cashPaid) : null,
-        changeReturn: body.changeReturn ? parseFloat(body.changeReturn) : null,
+        billNo,
+        customerName,
+        customerPhone: body.customerPhone || null,
+        subtotal,
+        gstAmount,
+        discount,
+        total,
+        paymentMethod,
+        cashPaid: body.cashPaid ? Number(body.cashPaid) : null,
+        changeReturn: body.changeReturn ? Number(body.changeReturn) : null,
+        status: "COMPLETED",
+        saleItems: body.items?.length
+          ? {
+              create: body.items.map((i: any) => ({
+                productId: i.productId,
+                name: i.name || "Item",
+                quantity: Number(i.quantity || 1),
+                price: Number(i.price || 0),
+                gstRate: Number(i.gstRate || i.tax || 0),
+                total: Number(i.total || (i.price * (i.quantity || 1))),
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        saleItems: true,
       },
     });
     return NextResponse.json({ success: true, data: newSale }, { status: 201 });
